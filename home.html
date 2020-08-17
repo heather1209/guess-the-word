@@ -1,0 +1,644 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<title>Guess the Word!</title>
+<script>
+   function load_js()
+   {
+	var head= document.getElementsByTagName('head')[0];
+	var s= document.createElement('script');
+	var t= document.createElement('script');
+		if (document.getElementById('wordToGuess').value != "")
+		{
+			var wordToGuess = document.getElementById('wordToGuess').value;
+		} else {
+			var wordToGuess = 'EnterAWord';
+		}
+	var x = "function makeRequest(url,runFunction) {\nvar http_request = false;\nvar timestamp = new Date();\nif (url.search(/\?/) > 0) url += \"&timestamp=\" + timestamp.getTime();\nelse url += \"?timestamp=\" + timestamp.getTime();\nif (window.ActiveXObject) { // IE\ntry {\nhttp_request = new ActiveXObject(\"Msxml2.XMLHTTP\");\n} catch (e) {\ntry {\nhttp_request = new ActiveXObject(\"Microsoft.XMLHTTP\");\n} catch (e) {\n}\n}\n} else if (window.XMLHttpRequest) { // Mozilla, Safari,...\nhttp_request = new XMLHttpRequest();\nif (http_request.overrideMimeType) {\nhttp_request.overrideMimeType('text/xml');\n}\n}\nif (!http_request) {\nalert('Giving up :( Cannot create an XMLHTTP instance');\nreturn false;\n}\nhttp_request.onreadystatechange = function() { getRequestResponse(http_request,runFunction); };\nhttp_request.open('GET', url, true);\nhttp_request.setRequestHeader(\"If-Modified-Since\", \"Sat, 1 Jan 2000 00:00:00 GMT\" );\nhttp_request.send(null);\n}\nfunction getRequestResponse(http_request, runFunction) {\nif (http_request.readyState == 4) {\nif (http_request.status == 200) {\nif (http_request.responseXML.documentElement) xmldoc = http_request.responseXML.documentElement;\nelse xmldoc = http_request.responseXML;\nrunFunction(xmldoc);\n} else {\nreport('There was a problem with the request: '+ http_request.status);\n}\n}\n}\nfunction setVar(xmlObj,element) {\nif (xmlObj.getElementsByTagName(element).length>0 && xmlObj.getElementsByTagName(element)[0].hasChildNodes()) {\nreturn xmlObj.getElementsByTagName(element)[0].firstChild.data;\n} else {\nreturn \"No data\";\n}\n}\nfunction report(str) {\nalert(str);	\n}"
+	s.type = 'text/javascript';
+	s.text = x;
+	document.head.appendChild(s);
+	
+	var y = "var punc = \",:.?!'- \";\nvar linelength = 16;\nvar wins = 0;\nvar tripContribute = 5;\nfunction Word(id,c,w) {\nthis.id = id;\nthis.category = c;\nw = w.toString().toUpperCase();\nthis.word = w;\nthis.letters = w.split(\"\");\n}\nfunction Word_getBreakpoint(n) {\nvar breakpoint;\nif (this.letters.length-n>linelength) {\nfor (var i=n; i<this.letters.length && i<n+linelength; i++) {\nif (this.letters[i]==\" \") {\nbreakpoint=i;\n}\n}\n}\nreturn breakpoint;\n}\nfunction Word_build() {\nvar punc = \",.?!' \";\nvar breakpoint = 0;\nvar j=0;\nset(\"word\").innerHTML='';\nif (this.word.length > linelength) {\nbreakpoint = this.getBreakpoint(0);\n}\nfor (var i in this.letters) {\nvar regex = new RegExp(this.letters[i]);\nif ( this.letters[i].search(/[a-zA-Z]/) == 0 ) {\nset(\"word\").innerHTML += '<input type=\"text\" size=\"1\" maxlength=\"1\" id=\"w'+i+'\">&nbsp;';\n} else {\nset(\"word\").innerHTML += this.letters[i] + '&nbsp;';\n}\nif ( i == breakpoint && breakpoint != 0 ) {\nset(\"word\").innerHTML += \"<br>\";\nbreakpoint = this.getBreakpoint(breakpoint);\n}\n}\n}\nfunction Word_disable() {\nfor (var i in this.letters) {\nif (set(\"w\"+i)) {\nset(\"w\"+i).value=this.letters[i];\nset(\"w\"+i).disabled=true;\n}\n}\n}\nWord.prototype.build = Word_build;\nWord.prototype.disable = Word_disable;\nWord.prototype.getBreakpoint = Word_getBreakpoint;\nfunction Gallows() {\nthis.failures;\n}\nfunction Gallows_display() {\nswitch (this.failures) {\ncase 6:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/FoRJHaV.png\" width=\"150\" height=\"150\" alt=\"0 chances left!\">';\nset(\"message2\").innerHTML = \"0 chances left!\"\nbreak;\ncase 5:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/PQtuEnn.png\" width=\"150\" height=\"150\" alt=\"1 chance left!\">';\nset(\"message2\").innerHTML = \"1 chance left!\"\nbreak;\ncase 4:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/Zb1hJ6z.png\" width=\"150\" height=\"150\" alt=\"2 chances left!\">';\nset(\"message2\").innerHTML = \"2 chances left!\"\nbreak;\ncase 3:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/6sU9TpI.png\" width=\"150\" height=\"150\" alt=\"3 chances left!\">';\nset(\"message2\").innerHTML = \"3 chances left!\"\nbreak;\ncase 2:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/94nsade.png.png\" width=\"150\" height=\"150\" alt=\"4 chances left!\">';\nset(\"message2\").innerHTML = \"4 chances left!\"\nbreak;\ncase 1:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/BHEXWr9.png\" width=\"150\" height=\"150\" alt=\"5 chances left!\">';\nset(\"message2\").innerHTML = \"5 chances left!\"\nbreak;\ncase 0:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/CPJ9Nam.png\" width=\"150\" height=\"150\" alt=\"6 chances left!\">';\nset(\"message2\").innerHTML = \"6 chances left!\"\nbreak;\n}\n}\nfunction Gallows_get() {\nreturn this.failures;\n}\nfunction Gallows_set(n) {\nthis.failures = n;\n}\nfunction Gallows_message(ltr) {\nvar msg;\nswitch (this.failures) {\ncase 5:\nmsg=\"DANGER--Guess carefully!\";\nbreak;\ncase 4:\nmsg=\"Uh-oh, things aren't looking good....\";\nbreak;\ndefault:\nmsg=\"Ouch! There are no \" + ltr + \"'s!\";\nbreak;\n}\nreturn msg;\n}\nGallows.prototype.display = Gallows_display;\nGallows.prototype.get = Gallows_get;\nGallows.prototype.set = Gallows_set;\nGallows.prototype.message = Gallows_message;\nfunction Letter(l) {\nthis.value = l;\nthis.guessed = false;\n}\nfunction Letter_getValue() {\nreturn this.value;\n}\nfunction Letter_setValue(v) {\nthis.value = v;\n}\nfunction Letter_getGuessed() {\nreturn this.guessed;\n}\nfunction Letter_setGuessed(b) {\nthis.guessed = b;\n}\nLetter.prototype.getValue = Letter_getValue;\nLetter.prototype.setValue = Letter_setValue;\nLetter.prototype.getGuessed = Letter_getGuessed;\nLetter.prototype.setGuessed = Letter_setGuessed;\nfunction Alphabet() {\nthis.abc = \"abcdefghijklmnopqrstuvwxyz\".toString().toUpperCase();\nfor (var i=0; i<this.abc.length; i++) {\nthis[this.abc.charAt(i)] = new Letter(this.abc.charAt(i));\n}\n}\nfunction Guess(g) {\nthis.letter = g.toString().toUpperCase();\n}\nfunction buildWord() {\nfor (var i in letters) {\nset(\"word\").innerHTML += '<input type=\"text\" size=\"1\" id=\"w'+i+'\"> ';\n}	\n}\nfunction Game() {\nthis.isOver;\nthis.alpha;\nthis.noose = new Gallows;\nthis.puzzle;\n}\nfunction Game_init(pz) {\nthis.isOver = false;\nthis.puzzle = pz;\nthis.puzzle.build();\nthis.alpha = new Alphabet;\nthis.noose.set(0);\nthis.noose.display();\ndisplay(\"message\",\"\");\nset(\"guessedLetters\").innerHTML = \"\";\nfor (var i=0; i<this.alpha.abc.length; i++) {\nset(\"guessedLetters\").innerHTML += '<a href=\"#\" id=\"' + this.alpha.abc.charAt(i) + '\" class=\"letter\" onClick=\"parent.dgame.checkGuess(' + this.alpha.abc.charAt(i) + '); return false;\">' + this.alpha.abc.charAt(i) + '</a> ';\n}\nhide(\"hover\");\nhide(\"filter\");\n}\nfunction puzzleMe(){\nshowAjaxMessage(\"loading\");\nvar person = '" + wordToGuess + "';\nif (person === null) {\nhide(\"hover\");\nhide(\"filter\");\nreturn;\n}\nplay(person);\n}\nfunction play(xmlData){\nvar category;\nvar words;\nid = 1;\ncategory = \"Guess me!\";\nwords = xmlData;\nparent.dgame.init(new Word(id,category,words));\n}\nfunction Game_getPuzzle() {\nvar pick=Math.floor(Math.random()*puzzles.length);\nreturn new Word(puzzles[pick].category,puzzles[pick].word);\n}\nfunction Game_checkGuess(ltr) {\nif ( !this.isOver ) {\nvar exists = false;\nvar occurrences = 0;\ndisplay(\"message\",\"\");\nltr = ltr.toString().toUpperCase();\nif ( ltr >= 'A' && ltr <= 'Z' ) {\nvar myGuess = new Guess(ltr);\nif ( this.alpha[myGuess.letter] && this.alpha[myGuess.letter].getGuessed(true) ) {\ndisplay(\"message\",\"You already guessed \" + this.alpha[myGuess.letter].getValue());\n} else {\nthis.alpha[myGuess.letter].setGuessed(true);\nfor (var i in this.puzzle.letters) {\nif ( this.puzzle.letters[i] == myGuess.letter ) {\nset(\"w\"+i).value = myGuess.letter;\nexists = true;\noccurrences+=1;\n}\n}\nif ( occurrences > 0 ) {\nset(myGuess.letter).className = \"letterExists\";\nif ( occurrences == 1 ) {\ndisplay(\"message\",\"There is \" + occurrences + \" \" + ltr + \"!\");\n} else {\ndisplay(\"message\",\"There are \" + occurrences + \" \" + ltr + \"'s!\");\n}\nthis.checkSolution();\n} else {\nset(myGuess.letter).className = \"letterDoesNotExist\";\ndisplay(\"message\",\"Ouch! There are no \" + ltr + \"'s!\");\nthis.noose.set(this.noose.get()+1);\nthis.noose.display();\ndisplay(\"message\",this.noose.message(ltr));\nif (this.noose.get() >= 6) {\nthis.end(\"Lose\");\n}\n}\n}\n}\n}\n}\nfunction Game_checkSolution() {\nvar regex = new RegExp(\"[^a-zA-Z]\",\"g\");\nvar board = \"\";\nvar letters = set(\"word\").getElementsByTagName(\"input\");\nfor (var i=0; i<letters.length; i++) {\nboard+=letters[i].value;\n}	\nif (board.replace(regex,\"\")==this.puzzle.word.replace(regex,\"\")) {\nthis.win();\n}\n}\nfunction Game_win() {\nthis.end(\"Win\");\nwins++;\n}\nfunction Game_end(status) {\ndisplay(\"message\",'You '+status+'!');\nthis.puzzle.disable();\nthis.isOver = true;\n}\nGame.prototype.init = Game_init;\nGame.prototype.getPuzzle = Game_getPuzzle;\nGame.prototype.checkGuess = Game_checkGuess;\nGame.prototype.checkSolution = Game_checkSolution;\nGame.prototype.win = Game_win;\nGame.prototype.end = Game_end;\nfunction showAjaxMessage(id) {\nvar pageSize = getPageSize();\nshow(\"hover\");\ndocument.getElementById(\"filter\").style.width = pageSize[0]+\"px\";\ndocument.getElementById(\"filter\").style.height = pageSize[1]+\"px\";\nshow(\"filter\");\nif (id!=\"loading\") hide(\"loading\");\nshow(id);\n}\nfunction getPageSize() {\nvar xScroll, yScroll;\nif (window.innerHeight && window.scrollMaxY) {	\nxScroll = window.innerWidth + window.scrollMaxX;\nyScroll = window.innerHeight + window.scrollMaxY;\n} else if (document.body.scrollHeight > document.body.offsetHeight){ \nxScroll = document.body.scrollWidth;\nyScroll = document.body.scrollHeight;\n} else {\nxScroll = document.body.offsetWidth;\nyScroll = document.body.offsetHeight;\n}\nvar windowWidth, windowHeight;\nif (self.innerHeight) {\nif(document.documentElement.clientWidth){\nwindowWidth = document.documentElement.clientWidth; \n} else {\nwindowWidth = self.innerWidth;\n}\nwindowHeight = self.innerHeight;\n} else if (document.documentElement && document.documentElement.clientHeight) {\nwindowWidth = document.documentElement.clientWidth;\nwindowHeight = document.documentElement.clientHeight;\n} else if (document.body) {\nwindowWidth = document.body.clientWidth;\nwindowHeight = document.body.clientHeight;\n}	\nif(yScroll < windowHeight){\npageHeight = windowHeight;\n} else { \npageHeight = yScroll;\n}\nif(xScroll < windowWidth){	\npageWidth = xScroll;		\n} else {\npageWidth = windowWidth;\n}\nreturn [pageWidth,pageHeight];\n}\nfunction display(id,msg) {\nif (set(id)) set(id).innerHTML=msg;\n}\nfunction set(id){return document.getElementById(id);}\nfunction show (id,type){\nif (type === undefined) {\ntype = \"block\";\n}\ndocument.getElementById(id).style.display = type;\n}\nfunction hide (id){\ndocument.getElementById(id).style.display = \"none\";\n}\nfunction setVar(xmlObj,element) {\nif (xmlObj.getElementsByTagName(element).length>0 && xmlObj.getElementsByTagName(element)[0].hasChildNodes()) {\nreturn xmlObj.getElementsByTagName(element)[0].firstChild.data;\n} else {\nreturn \"No data\";\n}\n}\nfunction createCookie(name,value,days) {\nif (days) {\nvar date = new Date();\ndate.setTime(date.getTime()+(days*24*60*60*1000));\nvar expires = \"; expires=\"+date.toGMTString();\n}\nelse var expires = \"\";\ndocument.cookie = name+\"=\"+value+expires+\"; path=/\";\n}\nfunction readCookie(name) {\nvar nameEQ = name + \"=\";\nvar ca = document.cookie.split(';');\nfor(var i=0;i < ca.length;i++) {\nvar c = ca[i];\nwhile (c.charAt(0)==' ') c = c.substring(1,c.length);\nif (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);\n}\nreturn null;\n}\nfunction doNothing() { }\nfunction dump(descr,value) {\nif (set(\"dump\")) set(\"dump\").innerHTML+=descr+\" \"+value+\"<br>\";\n}"
+	t.type = 'text/javascript';
+	t.text = y;
+	document.head.appendChild(t);
+   }
+  
+</script>
+    <script type="text/javascript">      
+      function makeDocument() {
+        var frame = document.getElementById("theFrame");
+        document.getElementById('theFrame').src = document.getElementById('theFrame').src
+		//load_js();
+        var doc = document.implementation.createHTMLDocument("New Document");
+		if (document.getElementById('wordToGuess').value != "")
+		{
+			var wordToGuess = document.getElementById('wordToGuess').value;
+		} else {
+			var wordToGuess = 'EnterAWord';
+		}
+
+        var p = '<body onload="javascript:parent.dgame=new parent.Game();parent.puzzleMe();">\n<div id="dump"></div>\n<div id="filter" style="width: 483px; height: 957px; display: none;"></div>\n<div id="game">\n<div align="center"><h1>Guess the Word!</h1>\n<div id="message"></div>\n<div id="message2">6 chances left!</div>\n</div>\n<div id="gallows"><img src="https://i.imgur.com/CPJ9Nam.png" width="150" height="150" alt="6 chances left!"></div>\n<div id="triesLeft"></div>\n<div id="guessedLetters"><a href="" id="A" class="letter" onclick="parent.dgame.checkGuess(\'A\'); return false;">A</a> <a href="" id="B" class="letter" onclick="parent.dgame.checkGuess(\'B\'); return false;">B</a> <a href="" id="C" class="letter" onclick="parent.dgame.checkGuess(\'C\'); return false;">C</a> <a href="" id="D" class="letter" onclick="parent.dgame.checkGuess(\'D\'); return false;">D</a> <a href="" id="E" class="letter" onclick="parent.dgame.checkGuess(\'E\'); return false;">E</a> <a href="" id="F" class="letter" onclick="parent.dgame.checkGuess(\'F\'); return false;">F</a> <a href="" id="G" class="letter" onclick="parent.dgame.checkGuess(\'G\'); return false;">G</a> <a href="" id="H" class="letter" onclick="parent.dgame.checkGuess(\'H\'); return false;">H</a> <a href="" id="I" class="letter" onclick="parent.dgame.checkGuess(\'I\'); return false;">I</a> <a href="" id="J" class="letter" onclick="parent.dgame.checkGuess(\'J\'); return false;">J</a> <a href="" id="K" class="letter" onclick="parent.dgame.checkGuess(\'K\'); return false;">K</a> <a href="" id="L" class="letter" onclick="parent.dgame.checkGuess(\'L\'); return false;">L</a> <a href="" id="M" class="letter" onclick="parent.dgame.checkGuess(\'M\'); return false;">M</a> <a href="" id="N" class="letter" onclick="parent.dgame.checkGuess(\'N\'); return false;">N</a> <a href="" id="O" class="letter" onclick="parent.dgame.checkGuess(\'O\'); return false;">O</a> <a href="" id="P" class="letter" onclick="parent.dgame.checkGuess(\'P\'); return false;">P</a> <a href="" id="Q" class="letter" onclick="parent.dgame.checkGuess(\'Q\'); return false;">Q</a> <a href="" id="R" class="letter" onclick="parent.dgame.checkGuess(\'R\'); return false;">R</a> <a href="" id="S" class="letter" onclick="parent.dgame.checkGuess(\'S\'); return false;">S</a> <a href="" id="T" class="letter" onclick="parent.dgame.checkGuess(\'T\'); return false;">T</a> <a href="" id="U" class="letter" onclick="parent.dgame.checkGuess(\'U\'); return false;">U</a> <a href="" id="V" class="letter" onclick="parent.dgame.checkGuess(\'V\'); return false;">V</a> <a href="" id="W" class="letter" onclick="parent.dgame.checkGuess(\'W\'); return false;">W</a> <a href="" id="X" class="letter" onclick="parent.dgame.checkGuess(\'X\'); return false;">X</a> <a href="" id="Y" class="letter" onclick="parent.dgame.checkGuess(\'Y\'); return false;">Y</a> <a href="" id="Z" class="letter" onclick="parent.dgame.checkGuess(\'Z\'); return false;">Z</a> </div>\n<div><font size="2px">&nbsp;</font></div>\n<fieldset>\n<div id="word"><input type="text" size="1" maxlength="1" id="w0">&nbsp;<input type="text" size="1" maxlength="1" id="w1">&nbsp;<input type="text" size="1" maxlength="1" id="w2">&nbsp;<input type="text" size="1" maxlength="1" id="w3">&nbsp;<input type="text" size="1" maxlength="1" id="w4">&nbsp;<input type="text" size="1" maxlength="1" id="w5">&nbsp;<input type="text" size="1" maxlength="1" id="w6">&nbsp;<input type="text" size="1" maxlength="1" id="w7">&nbsp;<input type="text" size="1" maxlength="1" id="w8">&nbsp;</div>\n</fieldset>\n</div>\n<div id="hover" style="display: none;">\n<div id="loading" style="display: block;"><h1>Loading puzzle...</h1></div>\n</div>\n</div>';
+		
+		var css = '@charset "utf-8"\nbody {\nmargin:0px;\npadding:0px;\nfont-family:Arial, Helvetica, sans-serif;\n}\nh1 {\nfont-size:large;\n}\nfieldset {\nborder:#900 solid 2px;\nbackground-color:#f2f2e6;\nmargin-top:.5em;\n}\nlegend {\ncolor: #000;\nfont-style:italic;\nfont-weight:bold;\n}\n#filter {\nwidth:100%;\nheight:100%;\nz-index:50;\ndisplay:none;\nposition:absolute; \ntop:0px; \nleft:0px;\nbackground-color:#f2f2e6;\nopacity: .5;\nfilter: alpha(opacity=50);\n}\n#hover {\nwidth:100%;\nheight:100%;\nz-index:66;\ndisplay:none;\nposition:absolute; \ntop:0px; \nleft:0px;\npadding-top:5em;\n}\n#loading,\n#preference {\nfont-size:x-small\n}\n#message {\nheight:20px;\ncolor:white;\n}\n#message2 {\nheight:20px;\ncolor:white;\n}\n#game{\nwidth:479px\n}\n#game { \nmargin:0 auto\n}\n#gallows,\n#guessedLetters {\nheight:160px;\n}\n#gallows { \nfloat:left;\nborder:dashed 2px #900;\nbackground-color:#f2f2e6;\nwidth: 160px;\npadding:10px;\n}\n#gallows img { \ndisplay:block;\nwidth:150px;\n}\n#guessedLetters { \nfloat:left;\nborder:dashed 2px #900;\nborder-left:none;\nbackground-color:#f2f2e6;\nwidth: 270px;\npadding:10px;\nfont-size:200%;\n}\n#word {\npadding: 10px 10px 10px 10px;\ntext-align:center;\nline-height:2.5em;\n}\n#word input {\nwidth:1em;\ntext-align:center;\nfont-size:large;\nfont-weight:bold;\nborder:1px solid #CCC;\nborder-bottom:2px solid black;\n}\n.letter,\n.letterExists,\n.letterDoesNotExist {\nfont-weight:bold;\ncolor:#000;\nbackground-color:#fafaee;\nborder:1px solid #eaeade;\ntext-decoration:none;\ndisplay:block;\nfloat:left;\nwidth:1.05em;\ntext-align:center;\n}\n.letterExists {\ncolor: green;\n}\n.letterDoesNotExist {\ncolor: #900;\ntext-decoration:line-through;\n}\ntd,h1 {\ncolor: white;\n}'
+		
+		var x = "function makeRequest(url,runFunction) {\nvar http_request = false;\nvar timestamp = new Date();\nif (url.search(/\?/) > 0) url += \"&timestamp=\" + timestamp.getTime();\nelse url += \"?timestamp=\" + timestamp.getTime();\nif (window.ActiveXObject) { // IE\ntry {\nhttp_request = new ActiveXObject(\"Msxml2.XMLHTTP\");\n} catch (e) {\ntry {\nhttp_request = new ActiveXObject(\"Microsoft.XMLHTTP\");\n} catch (e) {\n}\n}\n} else if (window.XMLHttpRequest) { // Mozilla, Safari,...\nhttp_request = new XMLHttpRequest();\nif (http_request.overrideMimeType) {\nhttp_request.overrideMimeType('text/xml');\n}\n}\nif (!http_request) {\nalert('Giving up :( Cannot create an XMLHTTP instance');\nreturn false;\n}\nhttp_request.onreadystatechange = function() { getRequestResponse(http_request,runFunction); };\nhttp_request.open('GET', url, true);\nhttp_request.setRequestHeader(\"If-Modified-Since\", \"Sat, 1 Jan 2000 00:00:00 GMT\" );\nhttp_request.send(null);\n}\nfunction getRequestResponse(http_request, runFunction) {\nif (http_request.readyState == 4) {\nif (http_request.status == 200) {\nif (http_request.responseXML.documentElement) xmldoc = http_request.responseXML.documentElement;\nelse xmldoc = http_request.responseXML;\nrunFunction(xmldoc);\n} else {\nreport('There was a problem with the request: '+ http_request.status);\n}\n}\n}\nfunction setVar(xmlObj,element) {\nif (xmlObj.getElementsByTagName(element).length>0 && xmlObj.getElementsByTagName(element)[0].hasChildNodes()) {\nreturn xmlObj.getElementsByTagName(element)[0].firstChild.data;\n} else {\nreturn \"No data\";\n}\n}\nfunction report(str) {\nalert(str);	\n}"
+		
+		var y = "var punc = \",:.?!'- \";\nvar linelength = 16;\nvar wins = 0;\nvar tripContribute = 5;\nfunction Word(id,c,w) {\nthis.id = id;\nthis.category = c;\nw = w.toString().toUpperCase();\nthis.word = w;\nthis.letters = w.split(\"\");\n}\nfunction Word_getBreakpoint(n) {\nvar breakpoint;\nif (this.letters.length-n>linelength) {\nfor (var i=n; i<this.letters.length && i<n+linelength; i++) {\nif (this.letters[i]==\" \") {\nbreakpoint=i;\n}\n}\n}\nreturn breakpoint;\n}\nfunction Word_build() {\nvar punc = \",.?!' \";\nvar breakpoint = 0;\nvar j=0;\nset(\"word\").innerHTML='';\nif (this.word.length > linelength) {\nbreakpoint = this.getBreakpoint(0);\n}\nfor (var i in this.letters) {\nvar regex = new RegExp(this.letters[i]);\nif ( this.letters[i].search(/[a-zA-Z]/) == 0 ) {\nset(\"word\").innerHTML += '<input type=\"text\" size=\"1\" maxlength=\"1\" id=\"w'+i+'\">&nbsp;';\n} else {\nset(\"word\").innerHTML += this.letters[i] + '&nbsp;';\n}\nif ( i == breakpoint && breakpoint != 0 ) {\nset(\"word\").innerHTML += \"<br>\";\nbreakpoint = this.getBreakpoint(breakpoint);\n}\n}\n}\nfunction Word_disable() {\nfor (var i in this.letters) {\nif (set(\"w\"+i)) {\nset(\"w\"+i).value=this.letters[i];\nset(\"w\"+i).disabled=true;\n}\n}\n}\nWord.prototype.build = Word_build;\nWord.prototype.disable = Word_disable;\nWord.prototype.getBreakpoint = Word_getBreakpoint;\nfunction Gallows() {\nthis.failures;\n}\nfunction Gallows_display() {\nswitch (this.failures) {\ncase 6:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/FoRJHaV.png\" width=\"150\" height=\"150\" alt=\"0 chances left!\">';\nset(\"message2\").innerHTML = \"0 chances left!\"\nbreak;\ncase 5:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/PQtuEnn.png\" width=\"150\" height=\"150\" alt=\"1 chance left!\">';\nset(\"message2\").innerHTML = \"1 chance left!\"\nbreak;\ncase 4:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/Zb1hJ6z.png\" width=\"150\" height=\"150\" alt=\"2 chances left!\">';\nset(\"message2\").innerHTML = \"2 chances left!\"\nbreak;\ncase 3:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/6sU9TpI.png\" width=\"150\" height=\"150\" alt=\"3 chances left!\">';\nset(\"message2\").innerHTML = \"3 chances left!\"\nbreak;\ncase 2:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/94nsade.png.png\" width=\"150\" height=\"150\" alt=\"4 chances left!\">';\nset(\"message2\").innerHTML = \"4 chances left!\"\nbreak;\ncase 1:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/BHEXWr9.png\" width=\"150\" height=\"150\" alt=\"5 chances left!\">';\nset(\"message2\").innerHTML = \"5 chances left!\"\nbreak;\ncase 0:\nset(\"gallows\").innerHTML = '<img src=\"https://i.imgur.com/CPJ9Nam.png\" width=\"150\" height=\"150\" alt=\"6 chances left!\">';\nset(\"message2\").innerHTML = \"6 chances left!\"\nbreak;\n}\n}\nfunction Gallows_get() {\nreturn this.failures;\n}\nfunction Gallows_set(n) {\nthis.failures = n;\n}\nfunction Gallows_message(ltr) {\nvar msg;\nswitch (this.failures) {\ncase 5:\nmsg=\"DANGER--Guess carefully!\";\nbreak;\ncase 4:\nmsg=\"Uh-oh, things aren't looking good....\";\nbreak;\ndefault:\nmsg=\"Ouch! There are no \" + ltr + \"'s!\";\nbreak;\n}\nreturn msg;\n}\nGallows.prototype.display = Gallows_display;\nGallows.prototype.get = Gallows_get;\nGallows.prototype.set = Gallows_set;\nGallows.prototype.message = Gallows_message;\nfunction Letter(l) {\nthis.value = l;\nthis.guessed = false;\n}\nfunction Letter_getValue() {\nreturn this.value;\n}\nfunction Letter_setValue(v) {\nthis.value = v;\n}\nfunction Letter_getGuessed() {\nreturn this.guessed;\n}\nfunction Letter_setGuessed(b) {\nthis.guessed = b;\n}\nLetter.prototype.getValue = Letter_getValue;\nLetter.prototype.setValue = Letter_setValue;\nLetter.prototype.getGuessed = Letter_getGuessed;\nLetter.prototype.setGuessed = Letter_setGuessed;\nfunction Alphabet() {\nthis.abc = \"abcdefghijklmnopqrstuvwxyz\".toString().toUpperCase();\nfor (var i=0; i<this.abc.length; i++) {\nthis[this.abc.charAt(i)] = new Letter(this.abc.charAt(i));\n}\n}\nfunction Guess(g) {\nthis.letter = g.toString().toUpperCase();\n}\nfunction buildWord() {\nfor (var i in letters) {\nset(\"word\").innerHTML += '<input type=\"text\" size=\"1\" id=\"w'+i+'\"> ';\n}	\n}\nfunction Game() {\nthis.isOver;\nthis.alpha;\nthis.noose = new Gallows;\nthis.puzzle;\n}\nfunction Game_init(pz) {\nthis.isOver = false;\nthis.puzzle = pz;\nthis.puzzle.build();\nthis.alpha = new Alphabet;\nthis.noose.set(0);\nthis.noose.display();\ndisplay(\"message\",\"\");\nset(\"guessedLetters\").innerHTML = \"\";\nfor (var i=0; i<this.alpha.abc.length; i++) {\nset(\"guessedLetters\").innerHTML += '<a href=\"#\" id=\"' + this.alpha.abc.charAt(i) + '\" class=\"letter\" onClick=\"parent.dgame.checkGuess('' + this.alpha.abc.charAt(i) + ''); return false;\">' + this.alpha.abc.charAt(i) + '</a> ';\n}\nhide(\"hover\");\nhide(\"filter\");\n}\nfunction puzzleMe(){\nshowAjaxMessage(\"loading\");\nvar person = '" + wordToGuess + "';\nif (person === null) {\nhide(\"hover\");\nhide(\"filter\");\nreturn;\n}\nplay(person);\n}\nfunction play(xmlData){\nvar category;\nvar words;\nid = 1;\ncategory = \"Guess me!\";\nwords = xmlData;\nparent.dgame.init(new Word(id,category,words));\n}\nfunction Game_getPuzzle() {\nvar pick=Math.floor(Math.random()*puzzles.length);\nreturn new Word(puzzles[pick].category,puzzles[pick].word);\n}\nfunction Game_checkGuess(ltr) {\nif ( !this.isOver ) {\nvar exists = false;\nvar occurrences = 0;\ndisplay(\"message\",\"\");\nltr = ltr.toString().toUpperCase();\nif ( ltr >= 'A' && ltr <= 'Z' ) {\nvar myGuess = new Guess(ltr);\nif ( this.alpha[myGuess.letter] && this.alpha[myGuess.letter].getGuessed(true) ) {\ndisplay(\"message\",\"You already guessed \" + this.alpha[myGuess.letter].getValue());\n} else {\nthis.alpha[myGuess.letter].setGuessed(true);\nfor (var i in this.puzzle.letters) {\nif ( this.puzzle.letters[i] == myGuess.letter ) {\nset(\"w\"+i).value = myGuess.letter;\nexists = true;\noccurrences+=1;\n}\n}\nif ( occurrences > 0 ) {\nset(myGuess.letter).className = \"letterExists\";\nif ( occurrences == 1 ) {\ndisplay(\"message\",\"There is \" + occurrences + \" \" + ltr + \"!\");\n} else {\ndisplay(\"message\",\"There are \" + occurrences + \" \" + ltr + \"'s!\");\n}\nthis.checkSolution();\n} else {\nset(myGuess.letter).className = \"letterDoesNotExist\";\ndisplay(\"message\",\"Ouch! There are no \" + ltr + \"'s!\");\nthis.noose.set(this.noose.get()+1);\nthis.noose.display();\ndisplay(\"message\",this.noose.message(ltr));\nif (this.noose.get() >= 6) {\nthis.end(\"Lose\");\n}\n}\n}\n}\n}\n}\nfunction Game_checkSolution() {\nvar regex = new RegExp(\"[^a-zA-Z]\",\"g\");\nvar board = \"\";\nvar letters = set(\"word\").getElementsByTagName(\"input\");\nfor (var i=0; i<letters.length; i++) {\nboard+=letters[i].value;\n}	\nif (board.replace(regex,\"\")==this.puzzle.word.replace(regex,\"\")) {\nthis.win();\n}\n}\nfunction Game_win() {\nthis.end(\"Win\");\nwins++;\n}\nfunction Game_end(status) {\ndisplay(\"message\",'You '+status+'!');\nthis.puzzle.disable();\nthis.isOver = true;\n}\nGame.prototype.init = Game_init;\nGame.prototype.getPuzzle = Game_getPuzzle;\nGame.prototype.checkGuess = Game_checkGuess;\nGame.prototype.checkSolution = Game_checkSolution;\nGame.prototype.win = Game_win;\nGame.prototype.end = Game_end;\nfunction showAjaxMessage(id) {\nvar pageSize = getPageSize();\nshow(\"hover\");\ndocument.getElementById(\"filter\").style.width = pageSize[0]+\"px\";\ndocument.getElementById(\"filter\").style.height = pageSize[1]+\"px\";\nshow(\"filter\");\nif (id!=\"loading\") hide(\"loading\");\nshow(id);\n}\nfunction getPageSize() {\nvar xScroll, yScroll;\nif (window.innerHeight && window.scrollMaxY) {	\nxScroll = window.innerWidth + window.scrollMaxX;\nyScroll = window.innerHeight + window.scrollMaxY;\n} else if (document.body.scrollHeight > document.body.offsetHeight){ \nxScroll = document.body.scrollWidth;\nyScroll = document.body.scrollHeight;\n} else {\nxScroll = document.body.offsetWidth;\nyScroll = document.body.offsetHeight;\n}\nvar windowWidth, windowHeight;\nif (self.innerHeight) {\nif(document.documentElement.clientWidth){\nwindowWidth = document.documentElement.clientWidth; \n} else {\nwindowWidth = self.innerWidth;\n}\nwindowHeight = self.innerHeight;\n} else if (document.documentElement && document.documentElement.clientHeight) {\nwindowWidth = document.documentElement.clientWidth;\nwindowHeight = document.documentElement.clientHeight;\n} else if (document.body) {\nwindowWidth = document.body.clientWidth;\nwindowHeight = document.body.clientHeight;\n}	\nif(yScroll < windowHeight){\npageHeight = windowHeight;\n} else { \npageHeight = yScroll;\n}\nif(xScroll < windowWidth){	\npageWidth = xScroll;		\n} else {\npageWidth = windowWidth;\n}\nreturn [pageWidth,pageHeight];\n}\nfunction display(id,msg) {\nif (set(id)) set(id).innerHTML=msg;\n}\nfunction set(id){return document.getElementById(id);}\nfunction show (id,type){\nif (type === undefined) {\ntype = \"block\";\n}\ndocument.getElementById(id).style.display = type;\n}\nfunction hide (id){\ndocument.getElementById(id).style.display = \"none\";\n}\nfunction setVar(xmlObj,element) {\nif (xmlObj.getElementsByTagName(element).length>0 && xmlObj.getElementsByTagName(element)[0].hasChildNodes()) {\nreturn xmlObj.getElementsByTagName(element)[0].firstChild.data;\n} else {\nreturn \"No data\";\n}\n}\nfunction createCookie(name,value,days) {\nif (days) {\nvar date = new Date();\ndate.setTime(date.getTime()+(days*24*60*60*1000));\nvar expires = \"; expires=\"+date.toGMTString();\n}\nelse var expires = \"\";\ndocument.cookie = name+\"=\"+value+expires+\"; path=/\";\n}\nfunction readCookie(name) {\nvar nameEQ = name + \"=\";\nvar ca = document.cookie.split(';');\nfor(var i=0;i < ca.length;i++) {\nvar c = ca[i];\nwhile (c.charAt(0)==' ') c = c.substring(1,c.length);\nif (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);\n}\nreturn null;\n}\nfunction doNothing() { }\nfunction dump(descr,value) {\nif (set(\"dump\")) set(\"dump\").innerHTML+=descr+\" \"+value+\"<br>\";\n}"
+
+		var iframe = document.getElementById('theFrame');
+
+		var html = "<head><script>" + x + "<" + "/script><script>" + y + "<" + "/script><style>" + css + "</style></head>" + p + "</body>";
+		iframe.srcdoc = html;
+		document.getElementById('theFrame').src = document.getElementById('theFrame').src
+      }
+    </script>
+<style>
+input { 
+    text-align: center; 
+}
+td,h1 {
+	color: white;
+	}
+</style>
+<script>
+// ajax.js
+// These are basically borrowed from the CRS ajaxlib
+
+function makeRequest(url,runFunction) {
+	var http_request = false;
+	var timestamp = new Date();
+
+	// Modify URL with querystring to ensure uniqueness (prevent browser caching)
+	// If URL already has a querystring, append a new querystring (i.e. "&qs=qs")
+	if (url.search(/\?/) > 0) url += "&timestamp=" + timestamp.getTime();
+	// Otherwise, append a querystring (i.e. "?qs=qs")
+	else url += "?timestamp=" + timestamp.getTime();
+	//dump("Making request: ",url);
+
+	if (window.ActiveXObject) { // IE
+    try {
+      http_request = new ActiveXObject("Msxml2.XMLHTTP");
+    } catch (e) {
+      try {
+       http_request = new ActiveXObject("Microsoft.XMLHTTP");
+      } catch (e) {
+			}
+    }
+  } else if (window.XMLHttpRequest) { // Mozilla, Safari,...
+    http_request = new XMLHttpRequest();
+    if (http_request.overrideMimeType) {
+      http_request.overrideMimeType('text/xml');
+      // See note below about this line
+    }
+  }
+  if (!http_request) {
+    alert('Giving up :( Cannot create an XMLHTTP instance');
+    return false;
+  }
+  http_request.onreadystatechange = function() { getRequestResponse(http_request,runFunction); };
+  http_request.open('GET', url, true);
+  // The following helps prevent the user's browser from using cached data
+  http_request.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT" );
+  http_request.send(null);
+}
+
+
+function getRequestResponse(http_request, runFunction) {
+	if (http_request.readyState == 4) {
+		if (http_request.status == 200) {
+			if (http_request.responseXML.documentElement) xmldoc = http_request.responseXML.documentElement;
+			else xmldoc = http_request.responseXML;
+			runFunction(xmldoc);
+		} else {
+			report('There was a problem with the request: '+ http_request.status);
+		}
+	}
+}
+
+function setVar(xmlObj,element) {
+	// Given an xml object and an element name, return the element value
+	if (xmlObj.getElementsByTagName(element).length>0 && xmlObj.getElementsByTagName(element)[0].hasChildNodes()) {
+		return xmlObj.getElementsByTagName(element)[0].firstChild.data;
+	} else {
+		return "No data";
+	}
+}
+
+function report(str) {
+	alert(str);	
+}
+</script>
+<script>
+// JavaScript Document
+
+
+var punc = ",:.?!'- "; // Puncutation characters not to be included as guessable characters
+var linelength = 16; // Max characters to be displayed per line
+var wins = 0; // Number of wins the user has racked up
+var tripContribute = 5; // Number of wins before asked to contribute
+
+
+function Word(id,c,w) {
+	this.id = id;
+	this.category = c;
+	w = w.toUpperCase();
+	this.word = w;
+	this.letters = w.split("");
+}
+
+function Word_getBreakpoint(n) {
+	var breakpoint;
+
+	if (this.letters.length-n>linelength) {
+		for (var i=n; i<this.letters.length && i<n+linelength; i++) {
+			if (this.letters[i]==" ") {
+				breakpoint=i;
+			}
+		}
+	}
+
+	return breakpoint;
+}
+
+
+function Word_build() {
+	var punc = ",.?!' ";
+	var breakpoint = 0;
+	var j=0;
+	// set current category
+	//set("category").innerHTML=this.category;
+	// clear current word
+	set("word").innerHTML='';
+	
+	if (this.word.length > linelength) {
+		breakpoint = this.getBreakpoint(0);
+	}
+	
+	for (var i in this.letters) {
+		var regex = new RegExp(this.letters[i]);
+
+		//alert(this.letters[i] + " " + this.letters[i].search(/a-zA-Z/i));
+		//if ( punc.search(regex) < 0 ) {
+		// Create an input box only if this is an alpha character
+		if ( this.letters[i].search(/[a-zA-Z]/) == 0 ) {
+			set("word").innerHTML += '<input type="text" size="1" maxlength="1" id="w'+i+'">&nbsp;';
+		} else {
+			set("word").innerHTML += this.letters[i] + '&nbsp;';
+		}
+		
+		if ( i == breakpoint && breakpoint != 0 ) {
+			// Add break
+			set("word").innerHTML += "<br>";
+			// Set new breakpoint
+			breakpoint = this.getBreakpoint(breakpoint);
+		}
+	}
+}
+
+function Word_disable() {
+	for (var i in this.letters) {
+		if (set("w"+i)) {
+			set("w"+i).value=this.letters[i];
+			set("w"+i).disabled=true;
+		}
+	}
+}
+
+
+Word.prototype.build = Word_build;
+Word.prototype.disable = Word_disable;
+Word.prototype.getBreakpoint = Word_getBreakpoint;
+
+
+function Gallows() {
+	this.failures;
+}
+
+function Gallows_display() {
+	switch (this.failures) {
+		case 6:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/FoRJHaV.png" width="150" height="150" alt="0 chances left!">';
+			set("message2").innerHTML = "0 chances left!"
+			break;
+		case 5:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/PQtuEnn.png" width="150" height="150" alt="1 chance left!">';
+			set("message2").innerHTML = "1 chance left!"
+			break;
+		case 4:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/Zb1hJ6z.png" width="150" height="150" alt="2 chances left!">';
+			set("message2").innerHTML = "2 chances left!"
+			break;
+		case 3:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/6sU9TpI.png" width="150" height="150" alt="3 chances left!">';
+			set("message2").innerHTML = "3 chances left!"
+			break;
+		case 2:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/94nsade.png.png" width="150" height="150" alt="4 chances left!">';
+			set("message2").innerHTML = "4 chances left!"
+			break;
+		case 1:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/BHEXWr9.png" width="150" height="150" alt="5 chances left!">';
+			set("message2").innerHTML = "5 chances left!"
+			break;
+		case 0:
+			set("gallows").innerHTML = '<img src="https://i.imgur.com/CPJ9Nam.png" width="150" height="150" alt="6 chances left!">';
+			set("message2").innerHTML = "6 chances left!"
+			break;
+	}
+}
+
+function Gallows_get() {
+	return this.failures;
+}
+
+function Gallows_set(n) {
+	this.failures = n;
+}
+
+function Gallows_message(ltr) {
+	var msg;
+	switch (this.failures) {
+		case 5:
+			msg="DANGER--Guess carefully!";
+			break;
+		case 4:
+			msg="Uh-oh, things aren't looking good....";
+			break;
+		default:
+			msg="Ouch! There are no " + ltr + "'s!";
+			break;
+	}
+	return msg;
+}
+
+Gallows.prototype.display = Gallows_display;
+Gallows.prototype.get = Gallows_get;
+Gallows.prototype.set = Gallows_set;
+Gallows.prototype.message = Gallows_message;
+
+function Letter(l) {
+	this.value = l;
+	this.guessed = false;
+}
+
+function Letter_getValue() {
+	return this.value;
+}
+
+function Letter_setValue(v) {
+	this.value = v;
+}
+
+function Letter_getGuessed() {
+	return this.guessed;
+}
+
+function Letter_setGuessed(b) {
+	this.guessed = b;
+}
+
+Letter.prototype.getValue = Letter_getValue;
+Letter.prototype.setValue = Letter_setValue;
+Letter.prototype.getGuessed = Letter_getGuessed;
+Letter.prototype.setGuessed = Letter_setGuessed;
+
+// Construct the set of characters that the user can guess (the alphabet)
+// Each character is an object of type Letter
+function Alphabet() {
+	this.abc = "abcdefghijklmnopqrstuvwxyz".toUpperCase();
+	for (var i=0; i<this.abc.length; i++) {
+		this[this.abc.charAt(i)] = new Letter(this.abc.charAt(i));
+	}
+}
+
+function Guess(g) {
+	this.letter = g.toUpperCase();
+}
+
+
+function buildWord() {
+for (var i in letters) {
+	set("word").innerHTML += '<input type="text" size="1" id="w'+i+'"> ';
+}	
+}
+
+
+function Game() {
+	// Game status
+	this.isOver;
+	
+	// Initialize alphabet guessing board
+	this.alpha;
+	
+	// Initialize player feedback "gallows"
+	this.noose = new Gallows;
+	
+	// Initialize puzzle (game phrase to be guessed)
+	this.puzzle;
+}
+
+// Initialize game
+function Game_init(pz) {
+	this.isOver = false;
+
+	//this.puzzle = this.getPuzzle();
+	this.puzzle = pz;
+	this.puzzle.build();
+	
+	// Initialize alphabet guessing board
+	this.alpha = new Alphabet;
+	
+	// Reset feedback board ("gallows")
+	this.noose.set(0);
+	this.noose.display();
+
+	display("message","");
+
+	set("guessedLetters").innerHTML = "";
+	for (var i=0; i<this.alpha.abc.length; i++) {
+		set("guessedLetters").innerHTML += '<a href="#" id="' + this.alpha.abc.charAt(i) + '" class="letter" onClick="parent.dgame.checkGuess(\'' + this.alpha.abc.charAt(i) + '\'); return false;">' + this.alpha.abc.charAt(i) + '</a> ';
+	}
+
+	// Hide loading message
+	hide("hover");
+	hide("filter");
+}
+
+function puzzleMe(){
+	showAjaxMessage("loading");
+	if (document.getElementById('wordToGuess').value != "")
+	{
+		var person = document.getElementById('wordToGuess').value;
+	} else {
+		var person = 'EnterAWord';
+	}
+	if (person === null) {
+		hide("hover");
+		hide("filter");
+        return; //break out of the function early
+    }
+	play(person);
+}
+
+function play(xmlData){
+	var category;
+	var words;
+		id = 1;
+		category = "Guess me!";
+		words = xmlData;
+		dgame.init(new Word(id,category,words));
+}
+
+// This could, in the future, go out and grab a puzzle with an AJAX call
+function Game_getPuzzle() {
+	var pick=Math.floor(Math.random()*puzzles.length);
+	return new Word(puzzles[pick].category,puzzles[pick].word);
+}
+
+
+function Game_checkGuess(ltr) {
+	if ( !this.isOver ) {
+		var exists = false;
+		var occurrences = 0;
+		display("message","");
+		ltr = ltr.toUpperCase();
+		if ( ltr >= 'A' && ltr <= 'Z' ) {
+			var myGuess = new Guess(ltr);
+			if ( this.alpha[myGuess.letter] && this.alpha[myGuess.letter].getGuessed(true) ) {
+				display("message","You already guessed " + this.alpha[myGuess.letter].getValue());
+			} else {
+				this.alpha[myGuess.letter].setGuessed(true);
+				for (var i in this.puzzle.letters) {
+					if ( this.puzzle.letters[i] == myGuess.letter ) {
+						set("w"+i).value = myGuess.letter;
+						exists = true;
+						occurrences+=1;
+					}
+				}
+				if ( occurrences > 0 ) {
+					set(myGuess.letter).className = "letterExists";
+					if ( occurrences == 1 ) {
+						display("message","There is " + occurrences + " " + ltr + "!");
+					} else {
+						display("message","There are " + occurrences + " " + ltr + "'s!");
+					}
+					// Check to see if the user has guessed all letters
+					this.checkSolution();
+				} else {
+					set(myGuess.letter).className = "letterDoesNotExist";
+					display("message","Ouch! There are no " + ltr + "'s!");
+					this.noose.set(this.noose.get()+1);
+					this.noose.display();
+					display("message",this.noose.message(ltr));
+					if (this.noose.get() >= 6) {
+						this.end("Lose");
+					}
+				}
+			}
+		}
+	}
+}
+
+// Check the current guesses agains the solution
+function Game_checkSolution() {
+	// Set up regular expression to remove punction & spaces -- we compare only the letter portion
+	//had used "["+punc+"]" - ,':;\.\?!  
+	var regex = new RegExp("[^a-zA-Z]","g");
+	// Build string out of all letters on the board--in case the user has guessed all the letters
+	var board = "";
+	var letters = set("word").getElementsByTagName("input");
+	for (var i=0; i<letters.length; i++) {
+		board+=letters[i].value;
+	}	
+	if (board.replace(regex,"")==this.puzzle.word.replace(regex,"")) {
+		this.win();
+	}
+}
+
+// Win
+function Game_win() {
+	// Update the number of wins in the database
+	//makeRequest("update.php?method=wins&id="+this.puzzle.id,doNothing);
+	this.end("Win");
+	wins++;
+}
+
+
+// End the game
+function Game_end(status) {
+	// Display message
+	display("message",'You '+status+'!');
+	// disable letters
+	this.puzzle.disable();
+	// set game over indicator
+	this.isOver = true;
+}
+
+Game.prototype.init = Game_init;
+Game.prototype.getPuzzle = Game_getPuzzle;
+Game.prototype.checkGuess = Game_checkGuess;
+Game.prototype.checkSolution = Game_checkSolution;
+Game.prototype.win = Game_win;
+Game.prototype.end = Game_end;
+
+/* GAME OBJ:
+	isOver property
+	word obj
+	alphabet/guessing board obj
+	gallows/feedback obj
+*/
+function showAjaxMessage(id) {
+	var pageSize = getPageSize();
+	show("hover");
+	document.getElementById("theFrame").contentWindow.document.getElementById("filter").style.width = pageSize[0]+"px";
+	document.getElementById("theFrame").contentWindow.document.getElementById("filter").style.height = pageSize[1]+"px";
+	show("filter");
+	if (id!="loading") hide("loading");
+	show(id);
+}
+// -----------------------------------------------
+// Get page size
+// Borrowed from Lightbox:
+// http://www.lokeshdhakar.com/projects/lightbox2/
+// -----------------------------------------------
+
+function getPageSize() {
+	var xScroll, yScroll;
+
+	if (window.innerHeight && window.scrollMaxY) {	
+		xScroll = window.innerWidth + window.scrollMaxX;
+		yScroll = window.innerHeight + window.scrollMaxY;
+	} else if (document.getElementById("theFrame").contentWindow.document.body.scrollHeight > document.getElementById("theFrame").contentWindow.document.body.offsetHeight){ // all but Explorer Mac
+		xScroll = document.getElementById("theFrame").contentWindow.document.body.scrollWidth;
+		yScroll = document.getElementById("theFrame").contentWindow.document.body.scrollHeight;
+	} else { // Explorer Mac...would also work in Explorer 6 Strict, Mozilla and Safari
+		xScroll = document.getElementById("theFrame").contentWindow.document.body.offsetWidth;
+		yScroll = document.getElementById("theFrame").contentWindow.document.body.offsetHeight;
+	}
+
+	var windowWidth, windowHeight;
+
+	if (self.innerHeight) {	// all except Explorer
+		if(document.getElementById("theFrame").contentWindow.document.documentElement.clientWidth){
+			windowWidth = document.documentElement.clientWidth; 
+		} else {
+			windowWidth = self.innerWidth;
+		}
+		windowHeight = self.innerHeight;
+	} else if (document.getElementById("theFrame").contentWindow.document.documentElement && document.getElementById("theFrame").contentWindow.document.documentElement.clientHeight) { // Explorer 6 Strict Mode
+		windowWidth = document.getElementById("theFrame").contentWindow.document.documentElement.clientWidth;
+		windowHeight = document.getElementById("theFrame").contentWindow.document.documentElement.clientHeight;
+	} else if (document.getElementById("theFrame").contentWindow.document.body) { // other Explorers
+		windowWidth = document.getElementById("theFrame").contentWindow.document.body.clientWidth;
+		windowHeight = document.getElementById("theFrame").contentWindow.document.body.clientHeight;
+	}	
+
+	// for small pages with total height less then height of the viewport
+	if(yScroll < windowHeight){
+		pageHeight = windowHeight;
+	} else { 
+		pageHeight = yScroll;
+	}
+	
+	// for small pages with total width less then width of the viewport
+	if(xScroll < windowWidth){	
+		pageWidth = xScroll;		
+	} else {
+		pageWidth = windowWidth;
+	}
+	
+	return [pageWidth,pageHeight];
+}
+
+
+
+
+// ------------------
+// Shortcut functions
+// ------------------
+
+// Sets the value of the element (id) to the specified string (msg)
+function display(id,msg) {
+	if (set(id)) set(id).innerHTML=msg;
+}
+
+// document.getElementById(id) shortcut
+function set(id){return document.getElementById("theFrame").contentWindow.document.getElementById(id);}
+
+// display the specified element
+function show (id,type){
+	//type is an optional parameter. it should be either "block" or "inline"
+	if (type === undefined) {
+		type = "block";
+	}
+	document.getElementById("theFrame").contentWindow.document.getElementById(id).style.display = type;
+}
+
+// hide the specifed element
+function hide (id){
+	document.getElementById("theFrame").contentWindow.document.getElementById(id).style.display = "none";
+}
+
+// Given an xml object and an element name, return the element value
+function setVar(xmlObj,element) {
+	if (xmlObj.getElementsByTagName(element).length>0 && xmlObj.getElementsByTagName(element)[0].hasChildNodes()) {
+		return xmlObj.getElementsByTagName(element)[0].firstChild.data;
+	} else {
+		return "No data";
+	}
+}
+
+// Create a cookie (http://www.quirksmode.org/js/cookies.html)
+function createCookie(name,value,days) {
+	if (days) {
+		var date = new Date();
+		date.setTime(date.getTime()+(days*24*60*60*1000));
+		var expires = "; expires="+date.toGMTString();
+	}
+	else var expires = "";
+	document.cookie = name+"="+value+expires+"; path=/";
+}
+
+// Read cookie (returns value or NULL)
+function readCookie(name) {
+	var nameEQ = name + "=";
+	var ca = document.cookie.split(';');
+	for(var i=0;i < ca.length;i++) {
+		var c = ca[i];
+		while (c.charAt(0)==' ') c = c.substring(1,c.length);
+		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+	}
+	return null;
+}
+
+// Do nothing
+function doNothing() { }
+
+// Debugging function
+function dump(descr,value) {
+	//This function dumps javascript data to the page, if a place for it exists.
+	if (set("dump")) set("dump").innerHTML+=descr+" "+value+"<br>";
+}</script>
+</head>
+<body translate="no" bgcolor=BLACK> 
+<div align="center">
+<h1>Guess the Word!</h1>
+<table>
+<tr><td>
+<div align="right">Word:</div>
+</td><td>
+  <input type="text" id="wordToGuess" name="wordToGuess" size="10" value="EnterAWord">
+</td></tr>
+</table>
+<br>
+<table>
+<tr><td><div align="center">
+<button type="button" onclick="javascript:makeDocument()">Create/Reset Game</button><br><br>
+</div></td></tr>
+<tr><td>
+  <div align="center"><iframe id="theFrame" src="about:blank" height="500px" width="500px"/></div>
+</td></tr>
+</table>
+</div>
+</body></html>
